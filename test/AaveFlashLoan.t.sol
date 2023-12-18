@@ -113,18 +113,20 @@ contract AaveFlashLoanTest is Test {
             ""
         );
 
-        // Close factor 設定為 50%
-        comptroller._setCloseFactor(5e17);
-        // Liquidation incentive 設為 8%
-        comptroller._setLiquidationIncentive(8e16);
+        comptrollerProxy._supportMarket(CToken(address(cUSDC)));
+        comptrollerProxy._supportMarket(CToken(address(cUNI)));
+
         // 在 Oracle 中設定 USDC 的價格為 $1，UNI 的價格為 $5
-        comptroller._setPriceOracle(priceOracle);
-        priceOracle.setUnderlyingPrice(CToken(address(cUSDC)), 1e30);
+        comptrollerProxy._setPriceOracle(priceOracle);
+        priceOracle.setUnderlyingPrice(CToken(address(cUSDC)), 1e6);
         priceOracle.setUnderlyingPrice(CToken(address(cUNI)), 5e18);
         // 設定 UNI 的 collateral factor 為 50%
-        comptroller._setCollateralFactor(CToken(address(cUNI)), 5e17);
-        comptroller._supportMarket(CToken(address(cUSDC)));
-        comptroller._supportMarket(CToken(address(cUNI)));
+        comptrollerProxy._setCollateralFactor(CToken(address(cUNI)), 5e17);
+        // Close factor 設定為 50%
+        comptrollerProxy._setCloseFactor(5e17);
+        // Liquidation incentive 設為 8%
+        comptrollerProxy._setLiquidationIncentive(8e16);
+
         vm.stopPrank();
 
         deal(address(USDC), user1, initialUSDCBalance);
@@ -136,7 +138,7 @@ contract AaveFlashLoanTest is Test {
     }
 
     function testAaveFlashLoan() public {
-        //_makeInitialLiquidity();
+        _makeInitialLiquidity();
         // User1 使用 1000 顆 UNI 作為抵押品借出 2500 顆 USDC
         vm.startPrank((user1));
 
@@ -177,13 +179,10 @@ contract AaveFlashLoanTest is Test {
     }
 
     function _makeInitialLiquidity() private {
+        // check market list
+        //comptroller.checkMembership(user2, cUSDC);
         // Add liquidity for USDC's pool by user2
         vm.startPrank(user2);
-
-        // add collateral
-        // address[] memory cTokens = new address[](1);
-        // cTokens[0] = address(cUSDC);
-        // comptroller.enterMarkets(cTokens);
 
         USDC.approve(address(cUSDC), USDC.balanceOf(user2));
         cUSDC.mint(USDC.balanceOf(user2));
